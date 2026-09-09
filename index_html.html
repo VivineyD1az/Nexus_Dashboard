@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS CAMPUS — Torre de Control</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#F4F6F9;
+    --panel:#FFFFFF;
+    --panel-2:#F1F3F7;
+    --border:#D9DEE7;
+    --border-soft:#E7EAF0;
+    --text:#1B2230;
+    --text-dim:#5B6472;
+    --text-faint:#8990A0;
+    --teal:#0DA495;
+    --teal-dim:#D6F2EE;
+    --crit:#D23F3C;
+    --crit-dim:#FBE5E4;
+    --high:#C17812;
+    --high-dim:#FBEDD6;
+    --med:#9C8309;
+    --med-dim:#FAF3D3;
+    --low:#1E9558;
+    --low-dim:#DEF3E7;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'IBM Plex Sans', sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(13,164,149,0.07), transparent),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+
+  .shell{max-width:1180px;margin:0 auto;padding:28px 24px 64px;}
+
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom:18px; margin-bottom:22px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(155deg, var(--teal), #1E8F82);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono); font-weight:700; color:#0A1512; font-size:15px;
+    flex:none;
+  }
+  .brand-text .name{font-weight:700; font-size:16.5px; letter-spacing:0.2px;}
+  .brand-text .sub{font-size:11.5px; color:var(--text-faint); margin-top:1px;}
+
+  .clock{font-family:var(--mono); font-size:12.5px; color:var(--text-dim); text-align:right;}
+  .clock .live{display:inline-flex;align-items:center;gap:6px; color:var(--low); margin-bottom:3px;}
+  .live .dot{width:6px;height:6px;border-radius:50%;background:var(--low); box-shadow:0 0 0 3px rgba(30,149,88,0.18);}
+
+  /* ---------- Tabs ---------- */
+  nav.tabs{
+    display:flex; gap:4px; margin-bottom:26px;
+    border:1px solid var(--border-soft); border-radius:10px;
+    padding:4px; background:var(--panel); width:fit-content;
+  }
+  nav.tabs button{
+    font-family:var(--sans); font-size:13px; font-weight:500;
+    color:var(--text-dim); background:transparent; border:none;
+    padding:9px 16px; border-radius:7px; cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+    white-space:nowrap;
+  }
+  nav.tabs button:hover{color:var(--text);}
+  nav.tabs button.active{
+    background:var(--panel-2); color:var(--text);
+    box-shadow:inset 0 0 0 1px var(--border);
+  }
+  nav.tabs button .num{font-family:var(--mono); color:var(--text-faint); margin-right:7px; font-size:11.5px;}
+  nav.tabs button.active .num{color:var(--teal);}
+
+  .page{display:none;}
+  .page.active{display:block; animation:fadeIn .25s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .page-head{margin-bottom:20px;}
+  .page-head h1{font-size:20px; font-weight:700; margin:0 0 4px;}
+  .page-head p{font-size:13px; color:var(--text-dim); margin:0; max-width:620px; line-height:1.5;}
+
+  /* ---------- KPI strip ---------- */
+  .kpi-strip{
+    display:grid; grid-template-columns:repeat(6,1fr); gap:10px;
+    margin-bottom:22px;
+  }
+  .kpi{
+    background:var(--panel); border:1px solid var(--border-soft); border-radius:10px;
+    padding:14px 14px 12px;
+    box-shadow:0 1px 2px rgba(20,30,50,0.04);
+  }
+  .kpi .label{font-size:11px; color:var(--text-faint); margin-bottom:8px; line-height:1.3;}
+  .kpi .value{font-family:var(--mono); font-size:22px; font-weight:600; letter-spacing:-0.5px;}
+  .kpi .value.crit{color:var(--crit);}
+  .kpi .value.low{color:var(--low);}
+  .kpi .value.teal{color:var(--teal);}
+  .kpi .unit{font-size:11px; color:var(--text-faint); font-weight:400; margin-left:2px;}
+
+  /* ---------- Grid layout page 1 ---------- */
+  .tower-grid{display:grid; grid-template-columns:1.55fr 1fr; gap:14px;}
+  .panel{
+    background:var(--panel); border:1px solid var(--border-soft); border-radius:12px;
+    padding:18px 18px 20px;
+    box-shadow:0 1px 3px rgba(20,30,50,0.05);
+  }
+  .panel h2{font-size:13px; font-weight:600; margin:0 0 14px; color:var(--text);}
+  .panel h2 .tag{font-family:var(--mono); font-size:10.5px; color:var(--text-faint); font-weight:400; margin-left:8px;}
+
+  .campus-map{display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto auto; gap:10px;}
+  .block{
+    border-radius:10px; padding:14px; border:1px solid var(--border);
+    position:relative; overflow:hidden; min-height:88px;
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .block .bname{font-size:12.5px; font-weight:600;}
+  .block .bstat{font-family:var(--mono); font-size:11px; margin-top:6px;}
+  .block.g{background:linear-gradient(160deg, var(--low-dim), var(--panel-2)); }
+  .block.g .bstat{color:var(--low);}
+  .block.r{background:linear-gradient(160deg, var(--crit-dim), var(--panel-2)); }
+  .block.r .bstat{color:var(--crit);}
+  .block.y{background:linear-gradient(160deg, var(--high-dim), var(--panel-2)); }
+  .block.y .bstat{color:var(--high);}
+  .block .pulse{
+    position:absolute; top:12px; right:12px; width:8px;height:8px;border-radius:50%;
+  }
+  .block.r .pulse{background:var(--crit); box-shadow:0 0 0 4px rgba(210,63,60,0.18);}
+  .block.y .pulse{background:var(--high); box-shadow:0 0 0 4px rgba(193,120,18,0.18);}
+  .block.g .pulse{background:var(--low); box-shadow:0 0 0 4px rgba(30,149,88,0.18);}
+  .block.wide{grid-column:1 / -1;}
+
+  .priority-list{display:flex; flex-direction:column; gap:8px;}
+  .prio-item{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border-radius:8px; border:1px solid var(--border-soft);
+    background:var(--panel-2); cursor:pointer; transition:border-color .15s ease;
+  }
+  .prio-item:hover{border-color:var(--border);}
+  .prio-rank{
+    font-family:var(--mono); font-size:11px; color:var(--text-faint);
+    width:16px; flex:none;
+  }
+  .prio-body{flex:1; min-width:0;}
+  .prio-body .t{font-size:12.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .prio-body .s{font-size:11px; color:var(--text-faint); margin-top:2px;}
+  .prio-score{
+    font-family:var(--mono); font-size:14px; font-weight:700; flex:none;
+    padding:3px 8px; border-radius:6px;
+  }
+  .prio-score.crit{color:var(--crit); background:var(--crit-dim);}
+  .prio-score.high{color:var(--high); background:var(--high-dim);}
+
+  .legend{display:flex; gap:16px; margin-top:14px; font-size:11px; color:var(--text-dim);}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .legend i{width:7px;height:7px;border-radius:50%; display:inline-block;}
+
+  /* ---------- Page 2: Predictivo ---------- */
+  .pred-grid{display:grid; grid-template-columns:1.3fr 1fr; gap:14px;}
+  .risk-row{display:grid; grid-template-columns:100px 1fr 46px; align-items:center; gap:12px; margin-bottom:14px;}
+  .risk-row:last-child{margin-bottom:0;}
+  .risk-row .asset{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+  .risk-track{height:9px; border-radius:5px; background:var(--panel-2); overflow:hidden; border:1px solid var(--border-soft);}
+  .risk-fill{height:100%; border-radius:5px;}
+  .risk-row .pct{font-family:var(--mono); font-size:12px; text-align:right;}
+
+  .asset-detail .name{font-size:16px; font-weight:700; margin-bottom:2px;}
+  .asset-detail .loc{font-size:12px; color:var(--text-faint); margin-bottom:16px;}
+  .signal-list{display:flex; flex-direction:column; gap:9px; margin-bottom:16px;}
+  .signal{display:flex; align-items:center; gap:10px; font-size:12.5px;}
+  .signal .ic{
+    width:26px;height:26px;border-radius:7px; background:var(--panel-2); border:1px solid var(--border-soft);
+    display:flex; align-items:center; justify-content:center; flex:none; font-size:13px;
+  }
+  .signal .txt{color:var(--text-dim);}
+  .signal .txt b{color:var(--text); font-weight:600;}
+
+  .verdict{
+    border-radius:10px; padding:14px 16px; margin-top:4px;
+    background:var(--crit-dim); border:1px solid rgba(210,63,60,0.3);
+  }
+  .verdict .vlabel{font-family:var(--mono); font-size:10.5px; color:var(--crit); letter-spacing:0.4px; margin-bottom:6px;}
+  .verdict .vtext{font-size:13px; line-height:1.5; color:var(--text);}
+
+  /* ---------- Page 3: IIC ---------- */
+  .iic-grid{display:grid; grid-template-columns:1fr 1.2fr; gap:14px;}
+  .req-list{display:flex; flex-direction:column; gap:8px;}
+  .req-item{
+    padding:11px 12px; border-radius:8px; border:1px solid var(--border-soft);
+    background:var(--panel-2); cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+    transition:all .15s ease;
+  }
+  .req-item.sel{border-color:var(--teal); background:rgba(13,164,149,0.07);}
+  .req-item .rt{font-size:12.5px; font-weight:500;}
+  .req-item .rs{font-size:11px; color:var(--text-faint); margin-top:2px;}
+  .req-badge{font-family:var(--mono); font-size:13px; font-weight:700; padding:3px 8px; border-radius:6px;}
+
+  .iic-score-block{display:flex; align-items:baseline; gap:10px; margin-bottom:4px;}
+  .iic-score-block .big{font-family:var(--mono); font-size:44px; font-weight:700; color:var(--crit); line-height:1;}
+  .iic-score-block .of100{font-size:13px; color:var(--text-faint);}
+  .iic-title{font-size:13.5px; color:var(--text-dim); margin-bottom:18px;}
+
+  .factor-row{display:grid; grid-template-columns:150px 1fr 60px; align-items:center; gap:12px; margin-bottom:10px; font-size:12px;}
+  .factor-row .fname{color:var(--text-dim);}
+  .ftrack{height:8px; border-radius:5px; background:var(--panel-2); border:1px solid var(--border-soft); overflow:hidden;}
+  .ffill{height:100%; background:linear-gradient(90deg, var(--teal-dim), var(--teal)); border-radius:5px;}
+  .factor-row .fval{font-family:var(--mono); text-align:right; color:var(--text);}
+
+  .iic-verdict{
+    margin-top:16px; padding:14px 16px; border-radius:10px;
+    background:var(--crit-dim); border:1px solid rgba(210,63,60,0.3);
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+  }
+  .iic-verdict .vl{font-size:12.5px; color:var(--text-dim);}
+  .iic-verdict .vv{font-family:var(--mono); font-size:13px; font-weight:700; color:var(--crit);}
+
+  /* ---------- Page 4: Simulación ---------- */
+  .sim-options{display:flex; flex-direction:column; gap:8px; margin-bottom:20px;}
+  .sim-opt{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 14px; border-radius:9px; border:1px solid var(--border-soft);
+    background:var(--panel-2); cursor:pointer;
+  }
+  .sim-opt.sel{border-color:var(--teal);}
+  .sim-opt input{accent-color:var(--teal); width:15px;height:15px;}
+  .sim-opt .so-text{font-size:13px; font-weight:500;}
+
+  table.sim-table{width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:18px;}
+  table.sim-table th{
+    text-align:left; font-weight:500; color:var(--text-faint); font-size:11px;
+    padding:8px 10px; border-bottom:1px solid var(--border-soft);
+  }
+  table.sim-table td{padding:10px 10px; border-bottom:1px solid var(--border-soft); font-family:var(--mono); font-size:12.5px;}
+  table.sim-table td:first-child{font-family:var(--sans); font-weight:500;}
+  table.sim-table tr.best{background:rgba(13,164,149,0.08);}
+  table.sim-table tr.best td:first-child{color:var(--teal);}
+  table.sim-table tr.chosen{background:var(--panel-2);}
+  table.sim-table tr.chosen td:first-child{box-shadow:inset 3px 0 0 var(--text-dim); padding-left:7px;}
+
+  .reco-banner{
+    display:flex; align-items:center; gap:14px;
+    padding:16px 18px; border-radius:12px;
+    background:linear-gradient(120deg, rgba(13,164,149,0.10), rgba(13,164,149,0.02));
+    border:1px solid rgba(13,164,149,0.3);
+  }
+  .reco-banner .rlabel{font-family:var(--mono); font-size:10.5px; color:var(--teal); letter-spacing:0.4px; margin-bottom:5px;}
+  .reco-banner .rtext{font-size:14px; font-weight:600;}
+  .reco-banner .rsub{font-size:12px; color:var(--text-dim); margin-top:3px; font-weight:400;}
+
+  footer.foot{margin-top:36px; padding-top:16px; border-top:1px solid var(--border-soft); font-size:11px; color:var(--text-faint); display:flex; justify-content:space-between;}
+
+  @media (max-width:820px){
+    .kpi-strip{grid-template-columns:repeat(3,1fr);}
+    .tower-grid, .pred-grid, .iic-grid{grid-template-columns:1fr;}
+    .campus-map{grid-template-columns:1fr;}
+    nav.tabs{width:100%; overflow-x:auto;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark">N</div>
+      <div class="brand-text">
+        <div class="name">NEXUS CAMPUS</div>
+        <div class="sub">Torre de Control · Mantenimiento predictivo</div>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="live"><span class="dot"></span>En vivo</div>
+      <div id="clockText">Martes 8 sep · 07:42</div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-page="p1"><span class="num">01</span>Torre de Control</button>
+    <button data-page="p2"><span class="num">02</span>Predictivo</button>
+    <button data-page="p3"><span class="num">03</span>Índice de Impacto</button>
+    <button data-page="p4"><span class="num">04</span>¿Qué pasa si...?</button>
+  </nav>
+
+  <!-- ===================== PAGE 1 — TORRE DE CONTROL ===================== -->
+  <section class="page active" id="p1">
+    <div class="page-head">
+      <h1>Estado general del campus</h1>
+      <p>Vista consolidada de solicitudes activas, disponibilidad de recursos y prioridades calculadas por el Índice de Impacto Campus.</p>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi"><div class="label">Solicitudes críticas</div><div class="value crit">7</div></div>
+      <div class="kpi"><div class="label">Tiempo prom. de atención</div><div class="value">2.4<span class="unit">h</span></div></div>
+      <div class="kpi"><div class="label">Fallas anticipadas</div><div class="value teal">18</div></div>
+      <div class="kpi"><div class="label">Horas académicas protegidas</div><div class="value low">42<span class="unit">h</span></div></div>
+      <div class="kpi"><div class="label">Técnicos disponibles</div><div class="value">12</div></div>
+      <div class="kpi"><div class="label">Repuestos críticos en stock</div><div class="value">89<span class="unit">%</span></div></div>
+    </div>
+
+    <div class="tower-grid">
+      <div class="panel">
+        <h2>Mapa del campus <span class="tag">4 zonas monitoreadas</span></h2>
+        <div class="campus-map">
+          <div class="block g"><span class="pulse"></span><div class="bname">Bloque A</div><div class="bstat">Operativo</div></div>
+          <div class="block r"><span class="pulse"></span><div class="bname">Bloque B</div><div class="bstat">3 solicitudes críticas</div></div>
+          <div class="block y"><span class="pulse"></span><div class="bname">Laboratorios</div><div class="bstat">2 en observación</div></div>
+          <div class="block g"><span class="pulse"></span><div class="bname">Bloque D</div><div class="bstat">Operativo</div></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--low)"></i>Operativo</span>
+          <span><i style="background:var(--high)"></i>Atención programada</span>
+          <span><i style="background:var(--crit)"></i>Intervención prioritaria</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Prioridades activas <span class="tag">ordenadas por IIC</span></h2>
+        <div class="priority-list">
+          <div class="prio-item" onclick="goToIIC(0)">
+            <span class="prio-rank">01</span>
+            <div class="prio-body"><div class="t">Ascensor — Bloque principal</div><div class="s">Persona atrapada · sin acceso alterno</div></div>
+            <span class="prio-score crit">94</span>
+          </div>
+          <div class="prio-item" onclick="goToIIC(1)">
+            <span class="prio-rank">02</span>
+            <div class="prio-body"><div class="t">Laboratorio B204</div><div class="s">Aire acondicionado · examen en curso</div></div>
+            <span class="prio-score crit">88</span>
+          </div>
+          <div class="prio-item" onclick="goToIIC(2)">
+            <span class="prio-rank">03</span>
+            <div class="prio-body"><div class="t">Red — Laboratorio C102</div><div class="s">Conectividad · práctica en curso</div></div>
+            <span class="prio-score high">82</span>
+          </div>
+          <div class="prio-item" onclick="goToIIC(3)">
+            <span class="prio-rank">04</span>
+            <div class="prio-body"><div class="t">Aire acondicionado A305</div><div class="s">Climatización · clase programada</div></div>
+            <span class="prio-score high">76</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PAGE 2 — PREDICTIVO ===================== -->
+  <section class="page" id="p2">
+    <div class="page-head">
+      <h1>¿Qué podría fallar?</h1>
+      <p>Riesgo estimado de falla por activo, calculado a partir de temperatura, consumo energético e historial de mantenimiento.</p>
+    </div>
+
+    <div class="pred-grid">
+      <div class="panel">
+        <h2>Riesgo de falla por activo</h2>
+        <div class="risk-row">
+          <span class="asset">AC-B204</span>
+          <div class="risk-track"><div class="risk-fill" style="width:82%; background:var(--crit);"></div></div>
+          <span class="pct" style="color:var(--crit);">82%</span>
+        </div>
+        <div class="risk-row">
+          <span class="asset">AC-A305</span>
+          <div class="risk-track"><div class="risk-fill" style="width:68%; background:var(--high);"></div></div>
+          <span class="pct" style="color:var(--high);">68%</span>
+        </div>
+        <div class="risk-row">
+          <span class="asset">Servidor-C</span>
+          <div class="risk-track"><div class="risk-fill" style="width:57%; background:var(--high);"></div></div>
+          <span class="pct" style="color:var(--high);">57%</span>
+        </div>
+        <div class="risk-row">
+          <span class="asset">Ascensor-A</span>
+          <div class="risk-track"><div class="risk-fill" style="width:41%; background:var(--med);"></div></div>
+          <span class="pct" style="color:var(--med);">41%</span>
+        </div>
+      </div>
+
+      <div class="panel asset-detail">
+        <h2>Detalle del activo seleccionado</h2>
+        <div class="name">AC-B204</div>
+        <div class="loc">Laboratorio B204 · Climatización</div>
+
+        <div class="signal-list">
+          <div class="signal"><span class="ic">🌡️</span><span class="txt">Temperatura <b>en aumento sostenido</b></span></div>
+          <div class="signal"><span class="ic">⚡</span><span class="txt">Consumo energético <b>por encima del promedio</b></span></div>
+          <div class="signal"><span class="ic">🔧</span><span class="txt">Historial de fallas <b>recurrente en 30 días</b></span></div>
+        </div>
+
+        <div class="verdict">
+          <div class="vlabel">PREDICCIÓN</div>
+          <div class="vtext">Alta probabilidad de falla. Se recomienda realizar mantenimiento preventivo antes de la próxima semana académica.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PAGE 3 — IIC ===================== -->
+  <section class="page" id="p3">
+    <div class="page-head">
+      <h1>Índice de Impacto Campus</h1>
+      <p>El IIC no es un semáforo: es un indicador compuesto que contextualiza cada solicitud según su impacto real sobre el campus.</p>
+    </div>
+
+    <div class="iic-grid">
+      <div class="panel">
+        <h2>Solicitudes activas</h2>
+        <div class="req-list" id="reqList"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Composición del índice</h2>
+        <div class="iic-score-block">
+          <span class="big" id="iicScore">94</span>
+          <span class="of100">/ 100</span>
+        </div>
+        <div class="iic-title" id="iicSubject">🛗 Mecánico — Ascensor, Bloque principal</div>
+
+        <div id="factorList"></div>
+
+        <div class="iic-verdict">
+          <span class="vl" id="iicVerdictLabel">Prioridad crítica</span>
+          <span class="vv" id="iicVerdictAction">Intervenir antes de las 7:50 AM</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PAGE 4 — ¿QUÉ PASA SI...? ===================== -->
+  <section class="page" id="p4">
+    <div class="page-head">
+      <h1>Simulación de escenarios</h1>
+      <p>Elige cuál solicitud atender primero. El técnico queda ocupado ese tiempo, y las otras dos quedan esperando — cada una empeora a su propio ritmo mientras espera. El impacto se recalcula según tu elección. Menor impacto total = mejor opción para ir primero.</p>
+    </div>
+
+    <div class="panel">
+      <h2>¿Qué pasa si atendemos primero...?</h2>
+
+      <div class="sim-options">
+        <label class="sim-opt sel" data-row="0">
+          <input type="radio" name="sim" checked onclick="selectScenario(0)">
+          <span class="so-text">Ascensor — Bloque principal</span>
+        </label>
+        <label class="sim-opt" data-row="1">
+          <input type="radio" name="sim" onclick="selectScenario(1)">
+          <span class="so-text">Laboratorio B204</span>
+        </label>
+        <label class="sim-opt" data-row="2">
+          <input type="radio" name="sim" onclick="selectScenario(2)">
+          <span class="so-text">Red C102</span>
+        </label>
+      </div>
+
+      <table class="sim-table">
+        <thead>
+          <tr><th>Escenario</th><th>Estado</th><th>Tiempo técnico</th><th>Impacto de espera</th></tr>
+        </thead>
+        <tbody id="simBody"></tbody>
+      </table>
+
+      <p style="font-size:11px;color:var(--text-faint);margin:-10px 0 16px;">* "Impacto de espera" = cuánto empeora cada solicitud pendiente mientras el técnico atiende la elegida (tiempo ocupado × velocidad de escalamiento de esa solicitud). La que se atiende ahora no acumula espera.</p>
+
+      <div class="reco-banner">
+        <div>
+          <div class="rlabel">TU SELECCIÓN</div>
+          <div class="rtext" id="recoText">Ascensor — Bloque principal</div>
+          <div class="rsub" id="recoSub">Impacto total en el resto del campus: 22 — es la mejor opción disponible</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>NEXUS CAMPUS — Dataset demostrativo con fines de presentación</span>
+    <span>Torre de Control v0.1</span>
+  </footer>
+</div>
+
+<script>
+  // ---------- Tabs ----------
+  const tabButtons = document.querySelectorAll('nav.tabs button');
+  const pages = document.querySelectorAll('.page');
+  function showPage(id){
+    tabButtons.forEach(b => b.classList.toggle('active', b.dataset.page === id));
+    pages.forEach(p => p.classList.toggle('active', p.id === id));
+  }
+  tabButtons.forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
+
+  // ---------- Clock ----------
+  function pad(n){return n.toString().padStart(2,'0');}
+  const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  function tick(){
+    const d = new Date();
+    document.getElementById('clockText').textContent =
+      days[d.getDay()] + ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  tick(); setInterval(tick, 30000);
+
+  // ---------- IIC data ----------
+  // El IIC pondera 8 factores sobre 100 pts. "Seguridad/accesibilidad" es el más pesado (20 pts)
+  // a propósito: un riesgo físico real (persona atrapada, sin ruta alterna) debe poder superar
+  // a una solicitud de confort aunque esta última tenga una clase o examen en curso.
+  const requests = [
+    {
+      title: '🛗 Ascensor A', subject: '🛗 Mecánico — Ascensor, Bloque principal', score: 94,
+      factors: [
+        ['Criticidad', 15, 15],
+        ['Personas afectadas', 9, 10],
+        ['Actividad académica', 10, 15],
+        ['Seguridad / accesibilidad', 20, 20],
+        ['Riesgo de escalamiento', 15, 15],
+        ['Disponibilidad de técnico', 10, 10],
+        ['Repuesto', 10, 10],
+        ['Momento', 5, 5],
+      ],
+      verdictLabel: 'Prioridad crítica', verdictAction: 'Liberar la cabina y atender de inmediato'
+    },
+    {
+      title: '❄️ AC-B204', subject: '❄️ Aire acondicionado — Laboratorio B204', score: 88,
+      factors: [
+        ['Criticidad', 15, 15],
+        ['Personas afectadas', 10, 10],
+        ['Actividad académica', 15, 15],
+        ['Seguridad / accesibilidad', 10, 20],
+        ['Riesgo de escalamiento', 13, 15],
+        ['Disponibilidad de técnico', 10, 10],
+        ['Repuesto', 10, 10],
+        ['Momento', 5, 5],
+      ],
+      verdictLabel: 'Prioridad crítica', verdictAction: 'Intervenir antes de que termine el examen (10:00 AM)'
+    },
+    {
+      title: '📡 Red C102', subject: '📡 Conectividad — Laboratorio C102', score: 82,
+      factors: [
+        ['Criticidad', 14, 15],
+        ['Personas afectadas', 9, 10],
+        ['Actividad académica', 14, 15],
+        ['Seguridad / accesibilidad', 3, 20],
+        ['Riesgo de escalamiento', 14, 15],
+        ['Disponibilidad de técnico', 9, 10],
+        ['Repuesto', 10, 10],
+        ['Momento', 5, 5],
+      ],
+      verdictLabel: 'Prioridad crítica', verdictAction: 'Intervenir antes de iniciar la práctica'
+    },
+    {
+      title: '❄️ AC-A305', subject: '❄️ Climatización — Aula A305', score: 76,
+      factors: [
+        ['Criticidad', 13, 15],
+        ['Personas afectadas', 9, 10],
+        ['Actividad académica', 12, 15],
+        ['Seguridad / accesibilidad', 5, 20],
+        ['Riesgo de escalamiento', 12, 15],
+        ['Disponibilidad de técnico', 10, 10],
+        ['Repuesto', 10, 10],
+        ['Momento', 5, 5],
+      ],
+      verdictLabel: 'Atención hoy', verdictAction: 'Programar antes de las 2:00 PM'
+    },
+  ];
+
+  function scoreColor(score){
+    if(score >= 81) return 'var(--crit)';
+    if(score >= 61) return 'var(--high)';
+    if(score >= 31) return 'var(--med)';
+    return 'var(--low)';
+  }
+
+  function renderReqList(selected){
+    const list = document.getElementById('reqList');
+    list.innerHTML = requests.map((r, i) => `
+      <div class="req-item ${i===selected?'sel':''}" onclick="selectRequest(${i})">
+        <div><div class="rt">${r.title}</div><div class="rs">${r.subject.replace(/^\S+\s/, '')}</div></div>
+        <span class="req-badge" style="color:${scoreColor(r.score)}; background:rgba(0,0,0,0.035);">${r.score}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderFactors(r){
+    const el = document.getElementById('factorList');
+    el.innerHTML = r.factors.map(([name, val, max]) => `
+      <div class="factor-row">
+        <span class="fname">${name}</span>
+        <div class="ftrack"><div class="ffill" style="width:${(val/max)*100}%;"></div></div>
+        <span class="fval">${val}/${max}</span>
+      </div>
+    `).join('');
+  }
+
+  function selectRequest(i){
+    const r = requests[i];
+    document.getElementById('iicScore').textContent = r.score;
+    document.getElementById('iicScore').style.color = scoreColor(r.score);
+    document.getElementById('iicSubject').textContent = r.subject;
+    document.getElementById('iicVerdictLabel').textContent = r.verdictLabel;
+    document.getElementById('iicVerdictAction').textContent = r.verdictAction;
+    renderFactors(r);
+    renderReqList(i);
+  }
+
+  function goToIIC(i){
+    showPage('p3');
+    selectRequest(i);
+  }
+
+  selectRequest(0);
+
+  // ---------- Scenario simulation ----------
+  // Simulación real: cada solicitud tiene un tiempo de atención (fix + desplazamiento) y una
+  // "velocidad de escalamiento" — cuánto empeora por minuto si se deja esperando.
+  // Al elegir cuál atender primero, el técnico queda ocupado ese tiempo, y las otras dos
+  // acumulan impacto según su propia velocidad × ese tiempo de espera. Así el resultado
+  // SÍ depende de la elección, en vez de ser un número fijo por fila.
+  const simItems = [
+    { name: 'Ascensor — Bloque principal', fix: 20, travel: 5, escalation: 1.00 }, // escala rápido: riesgo de seguridad
+    { name: 'Laboratorio B204', fix: 45, travel: 8, escalation: 0.50 },            // examen en curso, sin riesgo físico
+    { name: 'Red C102', fix: 40, travel: 12, escalation: 0.35 },                   // práctica en curso, escala más lento
+  ];
+
+  function busyTime(item){ return item.fix + item.travel; }
+
+  // impacto que le genera a CADA otra solicitud esperar `wait` minutos, ya redondeado
+  function computeDeltas(selectedIdx){
+    const wait = busyTime(simItems[selectedIdx]);
+    return simItems.map((it, idx) => idx === selectedIdx ? 0 : Math.round(it.escalation * wait));
+  }
+
+  function totalImpact(selectedIdx){
+    return computeDeltas(selectedIdx).reduce((a,b) => a+b, 0);
+  }
+
+  function renderSimTable(selectedIdx){
+    let bestIdx = 0, bestVal = Infinity;
+    simItems.forEach((_, idx) => { const v = totalImpact(idx); if (v < bestVal){ bestVal = v; bestIdx = idx; } });
+
+    const wait = busyTime(simItems[selectedIdx]);
+    const deltas = computeDeltas(selectedIdx);
+
+    const body = document.getElementById('simBody');
+    body.innerHTML = simItems.map((it, idx) => {
+      const rowClass = `${idx===bestIdx?'best':''} ${idx===selectedIdx && idx!==bestIdx ? 'chosen':''}`;
+      if (idx === selectedIdx){
+        return `<tr class="${rowClass}">
+          <td>${it.name}</td>
+          <td>Se atiende ahora</td>
+          <td>${busyTime(it)} min</td>
+          <td>—</td>
+        </tr>`;
+      }
+      return `<tr class="${rowClass}">
+        <td>${it.name}</td>
+        <td>En espera (+${wait} min)</td>
+        <td>${busyTime(it)} min</td>
+        <td style="color:${scoreColor(deltas[idx])}">+${deltas[idx]}</td>
+      </tr>`;
+    }).join('');
+
+    return { bestIdx, bestVal };
+  }
+
+  function selectScenario(i){
+    document.querySelectorAll('.sim-opt').forEach((el, idx) => el.classList.toggle('sel', idx===i));
+    const { bestIdx, bestVal } = renderSimTable(i);
+    const chosenVal = totalImpact(i);
+    document.getElementById('recoText').textContent = simItems[i].name;
+    if (i === bestIdx){
+      document.getElementById('recoSub').textContent =
+        `Impacto total en el resto del campus: ${chosenVal} — es la mejor opción disponible`;
+    } else {
+      document.getElementById('recoSub').textContent =
+        `Impacto total en el resto del campus: ${chosenVal} — atender "${simItems[bestIdx].name}" primero sería mejor (impacto ${bestVal})`;
+    }
+  }
+
+  selectScenario(0);
+</script>
+</body>
+</html>
